@@ -28,7 +28,9 @@
 
 params.transcriptome = "$baseDir/tutorial/transcriptome/transcriptome.fa"
 params.name          = "RNA-Seq Abundance Analysis"
-params.reads         = "$baseDir/tutorial/reads/*.fastq"
+params.reads         = "$baseDir/tutorial/reads"
+params.readsExtension="fastq"
+params.allReads="${params.reads}/*.${params.readsExtension}"
 params.fragment_len  = '180'
 params.fragment_sd   = '20'
 params.bootstrap     = '100'

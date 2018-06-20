@@ -30,7 +30,7 @@ params.transcriptome = "$baseDir/tutorial/transcriptome/transcriptome.fa"
 params.name          = "RNA-Seq Abundance Analysis"
 params.reads         = "$baseDir/tutorial/reads"
 params.readsExtension="fastq"
-params.allReads="${params.reads}/*.${params.readsExtension}"
+allReads="${params.reads}/*.${params.readsExtension}"
 params.fragment_len  = '180'
 params.fragment_sd   = '20'
 params.bootstrap     = '100'
@@ -70,7 +70,7 @@ if( !exp_file.exists() ) exit 1, "Missing experimental design file: ${exp_file}"
  */
  
 Channel
-    .fromFilePairs( params.reads, size: -1 )
+    .fromFilePairs( allReads, size: -1 )
     .ifEmpty { error "Cannot find any reads matching: ${params.reads}" }
     .set { read_files } 
 

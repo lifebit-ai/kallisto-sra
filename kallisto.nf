@@ -54,7 +54,7 @@ log.info "\n"
 
 transcriptome_file     = file(params.transcriptome)
 exp_file               = file(params.experiment) 
-projectSRId            = params.project
+accessionID            = params.accession
 
 /*
  * validate input files
@@ -70,14 +70,14 @@ process getSRAIDs {
     cpus 1
 
     input:
-    val projectID from projectSRId
+    val id from accessionID
     
     output:
     file 'sra.txt' into sraIDs
     
     script:
     """
-    esearch -db sra -query $projectID  | efetch --format runinfo | grep SRR | cut -d ',' -f 1 > sra.txt
+    esearch -db sra -query $id  | efetch --format runinfo | grep SRR | cut -d ',' -f 1 > sra.txt
     """
 }
 
@@ -85,7 +85,7 @@ sraIDs.splitText().map { it -> it.trim() }.set { singleSRAId }
 
 process fastqDump {
 
-    publishDir params.resultdir, mode: 'copy'
+    publishDir params.output, mode: 'copy'
 
     cpus threads
 
@@ -93,7 +93,7 @@ process fastqDump {
     val id from singleSRAId
 
     output:
-    set val id, file '*.fastq.gz' into reads
+    set val(id), file('*.fastq.gz') into read_files
 
     script:
     """
@@ -121,7 +121,7 @@ process index {
 
 process mapping {
     tag "reads: $name"
-
+    cpus threads
     input:
     file index from transcriptome_index
     set val(name), file(reads) from read_files
@@ -148,26 +148,3 @@ process mapping {
     }
 
 }
-
-
-process sleuth {
-    input:
-    file 'kallisto/*' from kallisto_out_dirs.collect()   
-    file exp_file
-
-    output: 
-    file 'sleuth_object.so'
-    file 'gene_table_results.txt'
-
-    script:
-    //
-    // Setup sleuth R dependancies and environment
-    //
- 
-    """
-    sleuth.R kallisto ${exp_file}
-    """
-}
-
-
-

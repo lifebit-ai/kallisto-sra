@@ -28,9 +28,7 @@
 
 params.transcriptome = "$baseDir/tutorial/transcriptome/transcriptome.fa"
 params.name          = "RNA-Seq Abundance Analysis"
-params.reads         = "$baseDir/tutorial/reads"
-params.readsExtension="fastq"
-allReads="${params.reads}/*.${params.readsExtension}"
+params.accession     = "PRJNA162905"
 params.fragment_len  = '180'
 params.fragment_sd   = '20'
 params.bootstrap     = '100'
@@ -40,8 +38,7 @@ params.output        = "results/"
 
 log.info "K A L L I S T O - N F  ~  version 0.9"
 log.info "====================================="
-log.info "name                   : ${params.name}"
-log.info "reads                  : ${params.reads}"
+log.info "Accession number       : ${params.project}"
 log.info "transcriptome          : ${params.transcriptome}"
 log.info "fragment length        : ${params.fragment_len} nt"
 log.info "fragment SD            : ${params.fragment_sd} nt"
@@ -57,6 +54,7 @@ log.info "\n"
 
 transcriptome_file     = file(params.transcriptome)
 exp_file               = file(params.experiment) 
+projectSRId            = params.project
 
 /*
  * validate input files
@@ -65,14 +63,43 @@ if( !transcriptome_file.exists() ) exit 1, "Missing transcriptome file: ${transc
 
 if( !exp_file.exists() ) exit 1, "Missing experimental design file: ${exp_file}"
 
-/*
- * Create a channel for read files 
- */
- 
-Channel
-    .fromFilePairs( allReads, size: -1 )
-    .ifEmpty { error "Cannot find any reads matching: ${params.reads}" }
-    .set { read_files } 
+int threads = Runtime.getRuntime().availableProcessors()
+
+process getSRAIDs {
+    
+    cpus 1
+
+    input:
+    val projectID from projectSRId
+    
+    output:
+    file 'sra.txt' into sraIDs
+    
+    script:
+    """
+    esearch -db sra -query $projectID  | efetch --format runinfo | grep SRR | cut -d ',' -f 1 > sra.txt
+    """
+}
+
+sraIDs.splitText().map { it -> it.trim() }.set { singleSRAId }
+
+process fastqDump {
+
+    publishDir params.resultdir, mode: 'copy'
+
+    cpus threads
+
+    input:
+    val id from singleSRAId
+
+    output:
+    set val id, file '*.fastq.gz' into reads
+
+    script:
+    """
+    parallel-fastq-dump --sra-id $id --threads ${task.cpus} --gzip
+    """ 
+}
 
 
 process index {

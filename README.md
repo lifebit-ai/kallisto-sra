@@ -3,7 +3,6 @@
 A Nextflow implementation of Kallisto RNA-Seq Tools fetching samples directly from SRA
 
 [![nextflow](https://img.shields.io/badge/nextflow-%E2%89%A50.24.0-brightgreen.svg)](http://nextflow.io)
-[![Build Status](https://travis-ci.org/cbcrg/kallisto-nf.svg?branch=master)](https://travis-ci.org/cbcrg/kallisto-nf)
 
 ## Quick start 
 
@@ -16,7 +15,7 @@ Install the Nextflow runtime by running the following command:
 
 When done, you can launch the pipeline execution by entering the command shown below:
 
-    $ nextflow run cbcrg/kallisto-nf
+    $ nextflow run lifebit-ai/kallisto-sra
     
 
 By default the pipeline is executed against the provided example dataset. 
@@ -27,33 +26,29 @@ command line.
 
 ## Pipeline parameters
 
-#### `--reads` 
+#### `--accession` 
    
-* Specifies the location of the reads *fastq* file(s).
-* Multiple files can be specified using the usual wildcards (*, ?), in this case make sure to surround the parameter string
-  value by single quote characters (see the example below)
-* It must end in `.fastq`.
-* Involved in the task: kallisto-mapping.
-* By default it is set to the Kallisto-NF's location: `./tutorial/data/*.fastq`
+* Specifies identifier of a sample or a project accession number found in SRA database.
+* Accession of a single sample can also be provided
+* Accession numbers must be found in SRA DB, like SRR, SRX, PRJ, ...
+* Involved in the task: fetch_sra and fastq-download.
 
 Example: 
 
-    $ nextflow run cbcrg/kallisto-nf --reads '/home/dataset/*.fastq'
+    $ nextflow run cbcrg/kallisto-nf --accession 'XXX'
 
-This will handle each fastq file as a seperate sample.
+This will connect to SRA DB and fetch all information related to the sample and/or project, which will be used to download automatically all sample fastq files in parallel.
 
-Read pairs of samples can be specified using the glob file pattern. Consider a more complex situation where there are three samples (A, B and C), with A and B being paired reads and C being single ended. The read files could be:
-    
-    sample_A_1.fastq
-    sample_A_2.fastq
-    sample_B_1.fastq
-    sample_B_2.fastq 
-    sample_C_1.fastq
+Once the reads are fetched it will start quantification of each sample in parallel against the transcriptome provided.
 
-The reads may be specified as below:
+The accession number may be specified as below for a single sample from SRA:
 
-    $ nextflow run cbcrg/kallisto-nf --reads '/home/dataset/sample_*_{1,2}.fastq'    
+    $ nextflow run lifebit-ai/kallisto-sra --reads 'SRR925734'    
 
+
+Or be specified as a project ID accession:
+
+    $ nextflow run lifebit-ai/kallisto-sra --reads 'PRJNA210428'    
   
 #### `--transcriptome`
 
@@ -65,28 +60,6 @@ The reads may be specified as below:
 Example:
 
     $ nextflow run cbcrg/kallisto-nf --transcriptome /home/user/my_transcriptome/example.fa
-
-
-#### `--experiment`
-
-* Specifies the location of the experimental design file.
-* The experimental design file provides Seulth with a link between the samples, conditions and replicates for abundance testing. 
-* By default it is set to the Kallisto-NF's location: `./tutorial/experiment/high_seqinfo.txt`
-
-Example: 
-
-    $ nextflow run cbcrg/kallisto-nf --experiment '/home/experiment/exp_design.txt'
-
-The experiment file should be a text file, space delimited, in a format similar to as shown below:
-
-    run_accession condition sample
-    SRR493366 control A
-    SRR493367 control B
-    SRR493368 control C
-    SRR493369 HOXA1KD A
-    SRR493370 HOXA1KD B
-    SRR493371 HOXA1KD C
-
 
 #### `--fragment_len`
 
@@ -133,39 +106,6 @@ Example:
 
     $ nextflow run cbcrg/kallisto-nf --output /home/user/my_results 
   
-
-
-## Cluster support
-
-Kallisto-NF execution relies on [Nextflow](http://www.nextflow.io) framework which provides an 
-abstraction between the pipeline functional logic and the underlying processing system.
-
-Thus it is possible to execute it on your computer or any cluster resource
-manager without modifying it.
-
-Currently the following platforms are supported:
-
-  + Oracle/Univa/Open Grid Engine (SGE)
-  + Platform LSF
-  + SLURM
-  + PBS/Torque
-
-
-By default the pipeline is parallelized by spawning multiple threads in the machine where the script is launched.
-
-To submit the execution to a SGE cluster create a file named `nextflow.config`, in the directory
-where the pipeline is going to be launched, with the following content:
-
-    process {
-      executor='sge'
-      queue='<your queue name>'
-    }
-
-When doing that, tasks will be executed through the `qsub` SGE command, and so your pipeline will behave like any
-other SGE job script, with the benefit that *Nextflow* will automatically and transparently manage the tasks
-synchronisation, file(s) staging/un-staging, etc.
-
-Alternatively the same declaration can be defined in the file `$HOME/.nextflow/config`.
 
 To lean more about the avaible settings and the configuration file read the 
 [Nextflow documentation](http://www.nextflow.io/docs/latest/config.html).

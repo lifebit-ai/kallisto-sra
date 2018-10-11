@@ -1,4 +1,4 @@
-# Kallisto-NF
+# Kallisto Nextflow pipeline
 
 A Nextflow implementation of Kallisto & Sleuth RNA-Seq Tools
 
